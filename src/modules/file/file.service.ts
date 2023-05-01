@@ -7,7 +7,11 @@ import { CreateFileDto } from './dto/create-file.dto';
 export class FileService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async create(fileDto: CreateFileDto) {
+  create(fileDto: CreateFileDto) {
     return this.prismaService.file.create({ data: fileDto });
+  }
+
+  delete(id: number) {
+    return this.prismaService.file.delete({ where: { id } });
   }
 }

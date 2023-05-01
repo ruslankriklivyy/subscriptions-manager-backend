@@ -17,11 +17,11 @@ export class TokenService {
     const payload = { ...user, id: user.id.toString() };
 
     const access_token = await this.jwtService.signAsync(payload, {
-      expiresIn: this.configService.get('JWT_ACCESS_TOKEN_EXPIRES_IN'),
+      expiresIn: this.configService.get('JWT_ACCESS_EXPIRES_IN'),
       secret: this.configService.get('JWT_ACCESS_SECRET'),
     });
     const refresh_token = await this.jwtService.signAsync(payload, {
-      expiresIn: this.configService.get('JWT_REFRESH_TOKEN_EXPIRES_IN'),
+      expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN'),
       secret: this.configService.get('JWT_REFRESH_SECRET'),
     });
 
@@ -48,11 +48,11 @@ export class TokenService {
   }
 
   async saveToken(userId: number, refreshToken: string) {
-    const tokenData = await this.prismaService.token.findUnique({
+    const token = await this.prismaService.token.findUnique({
       where: { user_id: userId },
     });
 
-    if (tokenData) {
+    if (token) {
       return this.prismaService.token.update({
         where: { user_id: userId },
         data: { refresh_token: refreshToken },
@@ -64,6 +64,7 @@ export class TokenService {
         user_id: userId,
         refresh_token: refreshToken,
       },
+      include: { user: true },
     });
   }
 
@@ -71,27 +72,13 @@ export class TokenService {
     return this.prismaService.token.delete({ where: { user_id: userId } });
   }
 
-  // findRefreshToken(refreshToken: string) {
-  //   return this.tokenModel.findOne({ refreshToken });
-  // }
-  //
-  // validateRefreshToken(token: string) {
-  //   try {
-  //     return this.jwtService.verify(token, {
-  //       secret: this.configService.get('JWT_REFRESH_SECRET'),
-  //     });
-  //   } catch (error) {
-  //     return null;
-  //   }
-  // }
-  //
-  // validateAccessToken(token: string) {
-  //   try {
-  //     return this.jwtService.verify(token, {
-  //       secret: this.configService.get('JWT_ACCESS_SECRET'),
-  //     });
-  //   } catch (error) {
-  //     return null;
-  //   }
-  // }
+  validateAccessToken(token: string) {
+    try {
+      return this.jwtService.verify(token, {
+        secret: this.configService.get('JWT_ACCESS_SECRET'),
+      });
+    } catch (error) {
+      return null;
+    }
+  }
 }

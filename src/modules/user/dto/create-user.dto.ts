@@ -12,7 +12,6 @@ export class CreateUserDto {
   email: string;
 
   @IsObject()
-  @IsEmpty()
   avatar: any;
 
   @IsString()

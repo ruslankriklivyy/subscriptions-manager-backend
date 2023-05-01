@@ -16,16 +16,19 @@ export class UserService {
   ) {}
 
   getOne({ field, value }: GetOneUserInterface) {
-    return this.prismaService.user.findUnique({ where: { [field]: value } });
+    return this.prismaService.user.findUnique({
+      where: { [field]: value },
+      include: { avatar: true },
+    });
   }
 
   async create(createUserDto: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(
       createUserDto.password,
-      this.configService.get('ROUNDS_OF_HASHING_PASSWORD'),
+      Number(this.configService.get('ROUNDS_OF_HASHING_PASSWORD')),
     );
-    const newUser: CreateUserDto = {
-      avatar: null,
+    const newUser = {
+      avatar_id: null,
       email: createUserDto.email,
       password: hashedPassword,
       birth_date: createUserDto.birth_date,
@@ -39,9 +42,12 @@ export class UserService {
         url: `${uploadedFilePath}/${createUserDto.avatar.filename}`,
         size: createUserDto.avatar.size,
       });
-      newUser.avatar = avatar;
+      newUser.avatar_id = avatar.id;
     }
 
-    return this.prismaService.user.create({ data: newUser });
+    return this.prismaService.user.create({
+      data: newUser,
+      include: { avatar: true },
+    });
   }
 }

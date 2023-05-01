@@ -43,11 +43,10 @@ model Subscription {
   description  String
   pay_plan     String
   color        String
-  icon         File          @relation(fields: [icon_id], references: [id])
-  icon_id      Int           @unique
+  icon         File?          @relation(fields: [icon_id], references: [id])
+  icon_id      Int?           @unique
   price        Float
-  pay_date     DateTime
-  fileId       Int
+  pay_date     String
   transactions Transaction[]
 }
 
