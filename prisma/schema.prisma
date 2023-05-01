@@ -1,0 +1,60 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int    @id @default(autoincrement())
+  avatar     File   @relation(fields: [avatar_id], references: [id])
+  avatar_id  Int    @unique
+  email      String @unique
+  password   String
+  full_name  String
+  birth_date String
+  Token      Token?
+}
+
+model Token {
+  id            Int    @id @default(autoincrement())
+  refresh_token String
+  user          User   @relation(fields: [user_id], references: [id])
+  user_id       Int    @unique
+}
+
+model File {
+  id           Int           @id @default(autoincrement())
+  name         String
+  size         Float
+  url          String
+  Subscription Subscription?
+  User         User?
+}
+
+model Subscription {
+  id           Int           @id @default(autoincrement())
+  name         String
+  description  String
+  pay_plan     String
+  color        String
+  icon         File          @relation(fields: [icon_id], references: [id])
+  icon_id      Int           @unique
+  price        Float
+  pay_date     DateTime
+  fileId       Int
+  transactions Transaction[]
+}
+
+model Transaction {
+  id              Int          @id @default(autoincrement())
+  date            DateTime
+  price           Float
+  subscription    Subscription @relation(fields: [subscription_id], references: [id])
+  subscription_id Int
+}
