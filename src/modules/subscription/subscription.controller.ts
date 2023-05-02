@@ -33,7 +33,7 @@ export class SubscriptionController {
   @HttpCode(200)
   @UseGuards(JwtAuthGuard)
   getOne(@Param() { id }) {
-    return this.subscriptionService.getOneById(id);
+    return this.subscriptionService.getOneById(Number(id));
   }
 
   @Post()

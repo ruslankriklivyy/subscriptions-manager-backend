@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { FileService } from '../file/file.service';
+import { generateParams } from '../../helpers/generate-params';
 
 @Injectable()
 export class SubscriptionService {
@@ -13,27 +14,12 @@ export class SubscriptionService {
   ) {}
 
   getAll(params?: Record<string, any>) {
-    const { skip, take, sort } = params;
-
-    const pagination: Partial<{ skip: number; take: number }> = {};
-    let newSort = {};
-
-    if (sort && Object.keys(sort)?.length) {
-      newSort = Object.keys(sort).map((key) => {
-        return { [key]: { endsWith: sort[key] } };
-      })[0];
-    }
-
-    if (skip) {
-      pagination['skip'] = Number(skip);
-    }
-    if (take) {
-      pagination['take'] = Number(take);
-    }
+    const { newFilter, orderBy, pagination } = generateParams(params);
 
     return this.prismaService.subscription.findMany({
       include: { icon: true },
-      where: newSort,
+      where: newFilter,
+      orderBy,
       take: pagination.take ?? 0,
       skip: pagination.skip ?? 0,
     });
@@ -100,6 +86,8 @@ export class SubscriptionService {
       throw new NotFoundException(`Subscription not found`);
     }
 
-    return this.fileService.delete(subscription.icon_id);
+    await this.fileService.delete(subscription.icon_id);
+
+    return this.prismaService.subscription.delete({ where: { id } });
   }
 }

@@ -13,6 +13,10 @@ export class TokenService {
     private readonly prismaService: PrismaService,
   ) {}
 
+  getOne(id: number) {
+    return this.prismaService.token.findUnique({ where: { id } });
+  }
+
   async generateTokens(user: IUser) {
     const payload = { ...user, id: user.id.toString() };
 

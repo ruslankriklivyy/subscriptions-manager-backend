@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 
@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { GetOneUserInterface } from './interfaces/get-one-user.interface';
 import { CreateUserDto } from './dto/create-user.dto';
 import { FileService } from '../file/file.service';
+import excludeColumns from '../../helpers/exclude-columns';
 
 @Injectable()
 export class UserService {
@@ -22,25 +23,25 @@ export class UserService {
     });
   }
 
-  async create(createUserDto: CreateUserDto) {
+  async create(payload: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(
-      createUserDto.password,
+      payload.password,
       Number(this.configService.get('ROUNDS_OF_HASHING_PASSWORD')),
     );
     const newUser = {
       avatar_id: null,
-      email: createUserDto.email,
+      email: payload.email,
       password: hashedPassword,
-      birth_date: createUserDto.birth_date,
-      full_name: createUserDto.full_name,
+      birth_date: payload.birth_date,
+      full_name: payload.full_name,
     };
 
-    if (createUserDto.avatar) {
+    if (payload.avatar) {
       const uploadedFilePath = this.configService.get('UPLOADED_FILE_PATH');
       const avatar = await this.fileService.create({
-        name: createUserDto.avatar.filename,
-        url: `${uploadedFilePath}/${createUserDto.avatar.filename}`,
-        size: createUserDto.avatar.size,
+        name: payload.avatar.filename,
+        url: `${uploadedFilePath}/${payload.avatar.filename}`,
+        size: payload.avatar.size,
       });
       newUser.avatar_id = avatar.id;
     }
@@ -49,5 +50,42 @@ export class UserService {
       data: newUser,
       include: { avatar: true },
     });
+  }
+
+  async update(id: number, payload) {
+    const user = await this.prismaService.user.findUnique({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException(`User not found`);
+    }
+
+    const dirtyData = (payload?.data && JSON.parse(payload.data)) || {};
+
+    const newUser = {
+      email: dirtyData.email || user.email,
+      birth_date: dirtyData.birth_date || user.birth_date,
+      full_name: dirtyData.full_name || user.full_name,
+    };
+
+    if (payload.avatar) {
+      const uploadedFilePath = this.configService.get('UPLOADED_FILE_PATH');
+      const avatar = await this.fileService.create({
+        name: payload.avatar.filename,
+        url: `${uploadedFilePath}/${payload.avatar.filename}`,
+        size: payload.avatar.size,
+      });
+
+      await this.fileService.delete(user.avatar_id);
+
+      newUser['avatar_id'] = avatar.id;
+    }
+
+    const updatedUser = await this.prismaService.user.update({
+      where: { id },
+      data: newUser,
+      include: { avatar: true },
+    });
+
+    return excludeColumns(updatedUser, ['password']);
   }
 }
